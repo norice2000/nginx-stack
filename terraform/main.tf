@@ -16,18 +16,17 @@ variable "region" {
 }
 
 variable "ami_id" {
-  default = "ami-0ebfd941bbafe70c6"  # Amazon Linux 2023 AMI ID for us-east-1
+  default = "ami-0ebfd941bbafe70c6" # Amazon Linux 2023 AMI ID for us-east-1
 }
 
 variable "key_name" {
-  default = "keypair"  # The name of your existing key pair in AWS
+  default = "keypair" # The name of your existing key pair in AWS
 }
 
 resource "aws_instance" "web_server" {
   ami           = var.ami_id
   instance_type = "t3.micro"
-  key_name      = var.key_name  # Use the existing key pair
-
+  key_name      = var.key_name
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
   tags = {
@@ -35,19 +34,40 @@ resource "aws_instance" "web_server" {
   }
 
   provisioner "remote-exec" {
-    inline = ["echo 'Instance is ready'"]
-
+    inline = [
+      "sudo yum update -y",
+      "sudo amazon-linux-extras install ansible2 -y",
+      "echo 'Ansible installed'"
+    ]
     connection {
       type        = "ssh"
       user        = "ec2-user"
-      private_key = file("~/.ssh/keypair.pem")  # Adjust this path to where you've stored the downloaded private key
+      private_key = file("/root/.ssh/keypair.pem")
       host        = self.public_ip
     }
   }
 
-  provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ec2-user -i '${self.public_ip},' --private-key ~/.ssh/keypair.pem ${path.root}/../ansible/main.yml"
-    on_failure = continue
+  provisioner "file" {
+    source      = "/ansible/main.yml"
+    destination = "/home/ec2-user/main.yml"
+    connection {
+      type        = "ssh"
+      user        = "ec2-user"
+      private_key = file("/root/.ssh/keypair.pem")
+      host        = self.public_ip
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "ansible-playbook /home/ec2-user/main.yml"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ec2-user"
+      private_key = file("/root/.ssh/keypair.pem")
+      host        = self.public_ip
+    }
   }
 }
 

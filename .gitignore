@@ -1,3 +1,6 @@
+# Ignore everything in the aws directory
+/aws/*
+
 # Ignore everything in the keys directory
 /key/*
 
