@@ -24,11 +24,10 @@ variable "key_name" {
 }
 
 resource "aws_instance" "web_server" {
-  ami           = var.ami_id
-  instance_type = "t3.micro"
-  key_name      = var.key_name
+  ami                    = var.ami_id
+  instance_type          = "t3.micro"
+  key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.web_sg.id]
-
   tags = {
     Name = "WebServer"
   }
@@ -36,8 +35,11 @@ resource "aws_instance" "web_server" {
   provisioner "remote-exec" {
     inline = [
       "sudo yum update -y",
-      "sudo amazon-linux-extras install ansible2 -y",
-      "echo 'Ansible installed'"
+      "sudo yum install -y python3-pip",
+      "sudo pip3 install ansible",
+      "ansible --version || echo 'Ansible installation failed'",
+      "if ! command -v ansible &> /dev/null; then echo 'Ansible is not installed or not in PATH' && exit 1; fi",
+      "mkdir -p /home/ec2-user/ansible"
     ]
     connection {
       type        = "ssh"
@@ -48,8 +50,8 @@ resource "aws_instance" "web_server" {
   }
 
   provisioner "file" {
-    source      = "/ansible/main.yml"
-    destination = "/home/ec2-user/main.yml"
+    source      = "/ansible/"
+    destination = "/home/ec2-user/ansible"
     connection {
       type        = "ssh"
       user        = "ec2-user"
@@ -60,7 +62,10 @@ resource "aws_instance" "web_server" {
 
   provisioner "remote-exec" {
     inline = [
-      "ansible-playbook /home/ec2-user/main.yml"
+      "ansible --version",
+      "echo 'Contents of /home/ec2-user/ansible:'",
+      "ls -la /home/ec2-user/ansible",
+      "ansible-playbook /home/ec2-user/ansible/main.yml || echo 'Ansible playbook execution failed'"
     ]
     connection {
       type        = "ssh"
