@@ -13,7 +13,7 @@ terraform:
 - main.tf provision ec2 resource whilst installing and running ansible playbppl
 
 key
-- keypay.pem   <= input your local keypay.pem file to allow ssh identity
+- keypay.pem   <= input your local keypay.pem file to allow ssh identity, remember to make it chmod 400
 
 aws:
 - config   <= populate it like the sample below:
