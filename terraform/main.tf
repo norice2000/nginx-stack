@@ -1,10 +1,10 @@
 # main.tf
 provider "aws" {
-  region = "us-east-2"  # or your preferred region
+  region = "us-east-1"  # or your preferred region
 }
 
 resource "aws_instance" "web_server" {
-  ami           = "ami-0ebfd941bbafe70c6"  # Amazon Linux 2023 AMI ID for us-east-2
+  ami           = "ami-0ebfd941bbafe70c6"  # Amazon Linux 2023 AMI ID for us-east-1
   instance_type = "t3.micro"
   key_name      = "keypair"
 
