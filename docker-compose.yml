@@ -10,6 +10,7 @@ services:
     volumes:
       - ./terraform:/terraform
       - ./ansible:/ansible
+      - ./key:/root/.ssh:ro
     working_dir: /terraform
     command: ["apply", "-auto-approve"]
     #entrypoint: ["terraform"]
