@@ -25,7 +25,11 @@ resource "aws_instance" "web_server" {
       host        = self.public_ip
     }
   }
-
+  
+  # Install Ansible
+  provisioner "local-exec" {
+    command = "python3 -m pip install --no-cache-dir ansible==8.7.0"
+  }
   # Run Ansible playbook
   provisioner "local-exec" {
     command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ec2-user -i '${self.public_ip},' --private-key ~/.ssh/id_rsa ${path.root}/../ansible/playbook.yml"
