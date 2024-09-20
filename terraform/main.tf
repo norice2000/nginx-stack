@@ -34,6 +34,7 @@ resource "aws_instance" "web_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "sudo -i",
       "sudo yum update -y",
       "sudo yum install -y python3-pip",
       "sudo pip3 install ansible",
@@ -62,6 +63,7 @@ resource "aws_instance" "web_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "sudo -i",
       "ansible --version",
       "echo 'Contents of /home/ec2-user/ansible:'",
       "ls -la /home/ec2-user/ansible",
