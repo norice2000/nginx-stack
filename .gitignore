@@ -11,7 +11,7 @@
 *.pem
 
 # Typical Terraform ignores
-**/.terraform/*
+**/terraform/.terraform/*
 *.tfstate
 *.tfstate.*
 crash.log
