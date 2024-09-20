@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  terraform:
+    image: hashicorp/terraform:1.10.0-alpha20240918
+    volumes:
+      - ./terraform:/terraform
+    working_dir: /terraform
+    entrypoint: ["terraform"]
+
+  ansible:
+    build:
+      context: .
+      dockerfile: Dockerfile-ansible
+    volumes:
+      - ./ansible:/ansible
+    working_dir: /ansible
