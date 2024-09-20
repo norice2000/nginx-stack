@@ -1,1 +1,26 @@
-key/*.pem
+# Ignore everything in the keys directory
+/key/*
+
+# ignore the keys directory itself
+!/key/.gitkeep
+
+# Ignore any .pem files anywhere in the project
+*.pem
+
+# Typical Terraform ignores
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Ansible ignores
+*.retry
