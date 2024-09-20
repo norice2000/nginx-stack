@@ -32,7 +32,7 @@ resource "aws_instance" "web_server" {
   }
   # Run Ansible playbook
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ec2-user -i '${self.public_ip},' --private-key ~/.ssh/id_rsa ${path.root}/../ansible/playbook.yml"
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ec2-user -i '${self.public_ip},' --private-key ~/.ssh/id_rsa ${path.root}/../ansible/main.yml"
   }
 }
 

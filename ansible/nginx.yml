@@ -1,0 +1,17 @@
+---
+- name: Update all packages
+  yum:
+    name: '*'
+    state: latest
+    update_only: yes
+
+- name: Install Nginx
+  yum:
+    name: nginx
+    state: present
+
+- name: Start Nginx service
+  service:
+    name: nginx
+    state: started
+    enabled: yes
