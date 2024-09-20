@@ -13,8 +13,9 @@ services:
       - ./key:/root/.ssh:ro
       - ./aws:/root/.aws:ro
     working_dir: /terraform
-    command: ["apply", "-auto-approve"]
-    #entrypoint: ["terraform"]
+    entrypoint: ["terraform"]
+    #command: ["apply", "-auto-approve"]
+    
 
   ansible:
     build:
