@@ -7,7 +7,7 @@ export AWS_ACCESS_KEY_ID=your_access_key_id
 export AWS_SECRET_ACCESS_KEY=your_secret_access_key
 export AWS_DEFAULT_REGION=your_default_region
 ```
-1. build docker `docker-compose build`
+1. build docker `docker-compose build --no-cache`
 2. use compose to run terraform
 `docker-compose run --rm terraform --version`
 
@@ -33,3 +33,8 @@ For example, to taint the aws_instance resource named web_server, run:
 `terraform taint aws_instance.web_server`
 
 After tainting the resource, run `terraform apply` will force Terraform to replace the tained resource.
+
+if you wish to clean up docker compose
+```
+docker-compose down --remove-orphans
+```
