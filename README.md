@@ -1,6 +1,12 @@
 # nginx-stack
 
 To get started
+1. have an env variable exported:
+```
+export AWS_ACCESS_KEY_ID=your_access_key_id
+export AWS_SECRET_ACCESS_KEY=your_secret_access_key
+export AWS_DEFAULT_REGION=your_default_region
+```
 1. build docker `docker-compose build`
 2. use compose to run terraform
 `docker-compose run --rm terraform --version`
