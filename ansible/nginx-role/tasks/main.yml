@@ -41,7 +41,7 @@
   command: systemctl status nginx.service
   register: nginx_status
   changed_when: false
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Display Nginx service status
   debug:
