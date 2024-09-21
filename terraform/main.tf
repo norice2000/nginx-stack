@@ -15,10 +15,6 @@ variable "region" {
   default = "us-east-1"
 }
 
-variable "ami_id" {
-  default = "ami-0ebfd941bbafe70c6" # Amazon Linux 2023 AMI ID for us-east-1
-}
-
 variable "key_name" {
   default = "keypair" # The name of your existing key pair in AWS
 }
