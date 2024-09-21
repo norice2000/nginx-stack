@@ -1,0 +1,48 @@
+---
+- name: Update all packages
+  yum:
+    name: '*'
+    state: latest
+    update_only: yes
+
+- name: Install Nginx
+  yum:
+    name: nginx
+    state: present
+
+- name: Create Hello World HTML file
+  copy:
+    content: "<html><body><h1>Hello, World!</h1></body></html>"
+    dest: /usr/share/nginx/html/index.html
+
+- name: Configure Nginx
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  notify:
+    - Restart Nginx
+
+- name: Start Nginx service
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Verify Nginx configuration
+  command: nginx -t
+  register: nginx_config_test
+  changed_when: false
+
+- name: Display Nginx configuration test output
+  debug:
+    var: nginx_config_test.stdout_lines
+
+- name: Check Nginx service status
+  command: systemctl status nginx.service
+  register: nginx_status
+  changed_when: false
+  ignore_errors: yes
+
+- name: Display Nginx service status
+  debug:
+    var: nginx_status.stdout_lines
