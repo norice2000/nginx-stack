@@ -10,9 +10,9 @@
     name: nginx
     state: present
 
-- name: Create Hello World HTML file
+- name: Create HTML file
   copy:
-    content: "<html><body><h1>Hello, World!</h1></body></html>"
+    content: "<html><body><h1>Infra Team is the best! ^_^</h1></body></html>"
     dest: /usr/share/nginx/html/index.html
 
 - name: Configure Nginx
