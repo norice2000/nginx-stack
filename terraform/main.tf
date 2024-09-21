@@ -15,16 +15,37 @@ variable "region" {
   default = "us-east-1"
 }
 
-variable "ami_id" {
-  default = "ami-0ebfd941bbafe70c6" # Amazon Linux 2023 AMI ID for us-east-1
-}
-
 variable "key_name" {
   default = "keypair" # The name of your existing key pair in AWS
 }
 
+data "aws_ami" "al2023" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
 resource "aws_instance" "web_server" {
-  ami                    = var.ami_id
+  ami                    = data.aws_ami.al2023.id
   instance_type          = "t3.micro"
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.web_sg.id]

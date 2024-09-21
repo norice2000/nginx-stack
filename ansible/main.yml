@@ -3,6 +3,10 @@
     - ansible.builtin.debug:
         msg: task1
 
-    - name: Include task nginx
-      ansible.builtin.include_tasks:
-        file: nginx.yml
+    # - name: Include task nginx
+    #   ansible.builtin.include_tasks:
+    #     file: nginx.yml
+
+    - name: Import role nginx-role
+      ansible.builtin.import_role:
+        name: nginx-role
