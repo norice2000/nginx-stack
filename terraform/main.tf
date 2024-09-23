@@ -86,7 +86,7 @@ resource "aws_instance" "web_server" {
       "ansible --version",
       "echo 'Contents of /home/ec2-user/ansible:'",
       "ls -la /home/ec2-user/ansible",
-      "sudo ansible-playbook /home/ec2-user/ansible/main.yml || echo 'Ansible playbook execution failed'"
+      "sudo ansible-playbook /home/ec2-user/ansible/site.yml || echo 'Ansible playbook execution failed'"
     ]
     connection {
       type        = "ssh"
