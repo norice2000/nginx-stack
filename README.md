@@ -38,3 +38,8 @@ if you wish to clean up docker compose
 ```
 docker-compose down --remove-orphans
 ```
+
+
+
+# UPDATE:
+this can now be automated with executing `run.sh`
