@@ -11,6 +11,7 @@ services:
       - ./terraform:/terraform
       - ./ansible:/ansible
       - ./key:/root/.ssh:ro
+      - ./output:/output
     working_dir: /terraform
     entrypoint: ["terraform"]
     
@@ -21,4 +22,5 @@ services:
       dockerfile: Dockerfile-ansible
     volumes:
       - ./ansible:/ansible
+      - ./output:/output
     working_dir: /ansible

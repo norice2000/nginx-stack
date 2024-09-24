@@ -1,0 +1,1 @@
+# output of where terraform output files here and to be used by Ansible
