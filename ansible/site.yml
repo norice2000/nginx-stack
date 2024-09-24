@@ -1,12 +1,22 @@
-- hosts: localhost
+- hosts: all
+  gather_facts: yes
+  become: yes
   tasks:
     - ansible.builtin.debug:
         msg: task1
 
-    # - name: Include task nginx
-    #   ansible.builtin.include_tasks:
-    #     file: nginx.yml
+    # - name: Import role nginx-role
+    #   ansible.builtin.import_role:
+    #     name: nginx-role
+    - ansible.builtin.debug:
+        msg: "Configuring Amazon Linux 2023 instance"
 
-    - name: Import role nginx-role
-      ansible.builtin.import_role:
-        name: nginx-role
+    - name: Include task nginx
+      ansible.builtin.include_tasks:
+        file: nginx.yml
+
+  handlers:
+    - name: Restart Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
