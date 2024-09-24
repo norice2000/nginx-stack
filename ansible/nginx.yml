@@ -12,7 +12,7 @@
 
 - name: Create Hello World HTML file
   ansible.builtin.copy:
-    content: "<html><body><h1>Hello, World!</h1></body></html>"
+    content: "<html><body><h1>Hello, World! Created by phoodie</h1></body></html>"
     dest: /usr/share/nginx/html/index.html
 
 - name: Configure Nginx
