@@ -7,7 +7,7 @@ build:
 
 ### Terraform
 ## Initialise
-init: build
+init: 
 	docker-compose run --rm terraform init
 .PHONY: init
 
