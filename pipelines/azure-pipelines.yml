@@ -1,0 +1,127 @@
+trigger:
+  - main
+
+pool:
+  name: 'ubuntu-latest'
+  demands:
+    - agent.name -equals ubuntu-2204
+  #vmImage: 'ubuntu-2204'
+
+variables:
+  cwd: '$(System.DefaultWorkingDirectory)'
+  AWS_DEFAULT_REGION: ap-southeast-2
+
+steps:
+- task: Bash@3
+  inputs:
+    targetType: "inline"
+    script: |
+      echo $?
+      sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
+
+      wget -O- https://apt.releases.hashicorp.com/gpg | \
+      gpg --dearmor | \
+      sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+      gpg --no-default-keyring \
+      --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg \
+      --fingerprint
+
+      sudo chmod 644 /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+      echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+      https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+      sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+      sudo apt update
+      sudo apt-get install terraform
+      printenv
+  displayName: "Install Terraform"
+
+- task: AWSShellScript@1
+  inputs:
+    awsCredentials: 'lz-sandbox-infrastructure'
+    regionName: 'ap-southeast-2'
+    scriptType: 'inline'
+    inlineScript: |
+      sudo apt install -y python3-pip
+      sudo apt-get install -y python3-venv
+
+      mkdir /tmp/ansible
+      cd /tmp/ansible
+      python3 -m venv env
+      source env/bin/activate
+
+      python3 -m pip uninstall -y ansible
+      python3 -m pip install --upgrade pip
+      python3 -m pip install "ansible-core>=2.16.5,<2.17.0" "ansible>=9.5.0,<9.8.0"
+      python3 -m pip -V
+      ansible --version
+      ls -lrt /tmp/ansible/env/bin
+      # Ensures Ansible env is functional in the next task
+      echo "##vso[task.setvariable variable=PATH]$PATH:/tmp/ansible/env/bin"
+  displayName: "Install Ansible"
+- task: AWSShellScript@1
+  inputs:
+    awsCredentials: 'lz-sandbox-infrastructure'
+    regionName: 'ap-southeast-2'
+    scriptType: 'inline'
+    inlineScript: |
+      cd $(System.DefaultWorkingDirectory)/terraform
+      pwd
+      terraform init
+  displayName: "TF Init"
+
+- task: AWSShellScript@1
+  name: tfApply #needed to call this variable
+  inputs:
+    awsCredentials: 'lz-sandbox-infrastructure'
+    regionName: 'ap-southeast-2'
+    scriptType: 'inline'
+    inlineScript: |
+      cd $(System.DefaultWorkingDirectory)/terraform
+      pwd
+      #terraform destroy -auto-approve
+      terraform apply -auto-approve
+
+      echo "Output TF values for Ansible"
+      KEY_NAME=$(terraform output -raw key_name)
+      PRIV_IP=$(terraform output -raw instance_private_ip)
+      PUB_IP=$(terraform output -raw instance_public_ip)
+
+      echo "Key Name: $KEY_NAME"
+      echo "Private IP: $PRIV_IP"
+      echo "Public IP: $PUB_IP"
+
+      # Set output variables for subsequent tasks
+      echo "##vso[task.setvariable variable=KEY_NAME;isOutput=true]$KEY_NAME"
+      echo "##vso[task.setvariable variable=PRIV_IP;isOutput=true]$PRIV_IP"
+      echo "##vso[task.setvariable variable=PUB_IP;isOutput=true]$PUB_IP"
+  displayName: "TF Apply"
+  
+- task: AWSShellScript@1
+  inputs:
+    awsCredentials: 'lz-sandbox-infrastructure'
+    regionName: 'ap-southeast-2'
+    scriptType: 'inline'
+    inlineScript: |
+      export ANSIBLE_HOST_KEY_CHECKING=False
+      cd $(System.DefaultWorkingDirectory)/
+      pwd
+      ls -l
+      ls -l /output/
+      python3 -m venv env
+      source env/bin/activate
+      # Ensure key file has correct permissions
+      sudo chmod 600 /output/$KEY_NAME
+      sudo chown $USER:$USER /output/$KEY_NAME
+      # Debug: Print environment variables
+      echo "PUB_IP: $(tfApply.PUB_IP)"
+      echo "KEY_NAME: $(tfApply.KEY_NAME)"
+      ls -l /output/$KEY_NAME
+      
+      ansible-playbook \
+        -i "$(tfApply.PUB_IP)," \
+        --private-key=/output/$(tfApply.KEY_NAME) \
+        -u ec2-user \
+        ansible/site.yml
+  displayName: "Run Ansible"
