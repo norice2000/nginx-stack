@@ -57,7 +57,7 @@ resource "aws_key_pair" "deployer" {
 
 #fetch keypair
 resource "local_file" "ec2_keypair" {
-  content = tls_private_key.private_key.private_key_pem
+  content  = tls_private_key.private_key.private_key_pem
   filename = "/output/${var.key_name}.pem"
 
   provisioner "local-exec" {

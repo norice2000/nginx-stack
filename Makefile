@@ -6,22 +6,30 @@ build:
 .PHONY: build
 
 ### Terraform
-## Initialise
 init: 
 	docker-compose run --rm terraform init
 .PHONY: init
 
-## Plan
+test: init
+	docker-compose run --rm terraform test
+.PHONY: test
+
+fmt: fmt
+	docker-compose run --rm terraform fmt -recursive .
+.PHONY: fmt
+
+lint: init
+	docker-compose run --rm tflint --recursive
+.PHONY: lint
+
 plan: init
 	docker-compose run --rm terraform plan
 .PHONY: plan
 
-## Apply
 apply: init
 	docker-compose run --rm terraform apply -auto-approve
 .PHONY: apply
 
-## Destroy
 destroy: init
 	docker-compose run --rm terraform destroy --auto-approve
 .PHONY: destroy

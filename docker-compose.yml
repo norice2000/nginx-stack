@@ -15,11 +15,20 @@ services:
     working_dir: /terraform
     entrypoint: ["terraform"]
     
+  tflint:
+    build:
+      context: .
+      dockerfile: ./containers/tflint.Dockerfile
+    volumes:
+      - ./config:/config:ro
+      - ./terraform:/terraform:ro
+    working_dir: /
+    entrypoint: ["tflint"]
 
   ansible:
     build:
       context: .
-      dockerfile: Dockerfile-ansible
+      dockerfile: ./containers/ansible.Dockerfile
     volumes:
       - ./ansible:/ansible
       - ./output:/output
