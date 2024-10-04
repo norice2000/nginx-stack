@@ -37,7 +37,7 @@ variable "region" {
 
 variable "subnet_id" {
   description = "The ID of the subnet"
-  default     = ""
+  default     = "subnet-0e2282d8f458ae0bf"
   #default     = "subnet-082196bccfdd34fe3"
 }
 
@@ -91,11 +91,37 @@ resource "aws_instance" "web_server" {
   ami                    = data.aws_ami.image_ami.id
   instance_type          = "t3.micro"
   key_name               = aws_key_pair.generated_key.key_name
-  vpc_security_group_ids = [var.aws_security_group_id]
+  vpc_security_group_ids = [aws_security_group.web_sg.id] 
   subnet_id              = var.subnet_id
 
   tags = {
     Name = "ec2-nginx"
+  }
+}
+
+resource "aws_security_group" "web_sg" {
+  name        = "web_sg"
+  description = "Allow SSH and HTTP"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
