@@ -1,0 +1,159 @@
+trigger:
+  - main
+
+pool:
+ #name: vmss-agent-ubuntu-2204
+ name: 'ubuntu-latest'
+
+variables:
+  cwd: '$(System.DefaultWorkingDirectory)'
+  aws_credentials: 'lz-sandbox-infrastructure'
+  terraform_dir: $(System.DefaultWorkingDirectory)/terraform
+
+steps:
+- task: Bash@3
+  inputs:
+    targetType: "inline"
+    script: |
+      echo $?
+      sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
+
+      wget -O- https://apt.releases.hashicorp.com/gpg | \
+      gpg --dearmor | \
+      sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+      gpg --no-default-keyring \
+      --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg \
+      --fingerprint
+
+      sudo chmod 644 /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+      echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+      https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+      sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+      sudo apt update
+      sudo apt-get install terraform
+      printenv
+  displayName: "Install Terraform"
+
+- task: AWSShellScript@1
+  inputs:
+    awsCredentials: $(aws_credentials) #'lz-sandbox-infrastructure'
+    regionName: 'ap-southeast-2'
+    scriptType: 'inline'
+    inlineScript: |
+      cd $(terraform_dir)
+      pwd
+      terraform init
+  displayName: "TF Init"
+
+- task: AWSShellScript@1
+  inputs:
+    awsCredentials: $(aws_credentials) #'lz-sandbox-infrastructure'
+    regionName: 'ap-southeast-2'
+    scriptType: 'inline'
+    inlineScript: |
+      cd $(terraform_dir)
+      terraform plan
+  displayName: "Terraform Plan"
+
+# AWS Secrets key https://aws.amazon.com/blogs/security/how-to-use-aws-secrets-manager-securely-store-rotate-ssh-key-pairs/
+- task: AWSShellScript@1
+  name: TaskTerraformApply
+  inputs:
+    awsCredentials: $(aws_credentials)
+    regionName: 'ap-southeast-2'
+    scriptType: 'inline'
+    inlineScript: |
+      cd $(terraform_dir)
+      terraform apply -auto-approve
+      #terraform destroy -auto-approve
+
+      PRIV_IP=$(terraform output -raw instance_private_ip)
+      PUB_IP=$(terraform output -raw instance_public_ip)
+      INST_ID=$(terraform output -raw instance_id)
+      SSH_KEY_SECRET_NAME=$(terraform output -raw ssh_key_secret_name)
+
+      echo "##vso[task.setvariable variable=PRIV_IP;isOutput=true]$PRIV_IP"
+      echo "##vso[task.setvariable variable=PUB_IP;isOutput=true]$PUB_IP"
+      echo "##vso[task.setvariable variable=INST_ID;isOutput=true]$INST_ID"
+      echo "##vso[task.setvariable variable=SSH_KEY_SECRET_NAME;isOutput=true]$SSH_KEY_SECRET_NAME"
+  displayName: "Terraform Apply"
+
+- task: AWSShellScript@1
+  inputs:
+    awsCredentials: $(aws_credentials)
+    regionName: 'ap-southeast-2'
+    scriptType: 'inline'
+    inlineScript: |
+      # Retrieve SSH key from Secrets Manager
+      SSH_KEY_JSON=$(aws secretsmanager get-secret-value --secret-id $(TaskTerraformApply.SSH_KEY_SECRET_NAME) --query SecretString --output text)
+      SSH_PRIVATE_KEY=$(echo $SSH_KEY_JSON | jq -r .private_key)
+      
+      # Save the SSH key to a file
+      echo "$SSH_PRIVATE_KEY" > $(System.DefaultWorkingDirectory)/output/ssh_key.pem
+      chmod 400 $(System.DefaultWorkingDirectory)/output/ssh_key.pem
+  displayName: "Prepare Key for Ansible"
+
+- task: Bash@3
+  name: CheckSSH
+  inputs:
+    targetType: "inline"
+    script: |
+      TIMEOUT=200
+      START_TIME=$(date +%s)
+      
+      echo "Checking SSH reachability for $(TaskTerraformApply.PRIV_IP)..."
+      
+      while true; do
+        if nc -z -w 5 $(TaskTerraformApply.PRIV_IP) 22 2>/dev/null; then
+          echo "SSH on $(TaskTerraformApply.PRIV_IP) is reachable"
+          echo "##vso[task.setvariable variable=sshReachable;isOutput=true]true"
+          exit 0
+        fi
+        
+        CURRENT_TIME=$(date +%s)
+        ELAPSED=$((CURRENT_TIME - START_TIME))
+        
+        if [ ${ELAPSED} -ge $TIMEOUT ]; then
+          echo "TIMEOUT: SSH not reachable after ${TIMEOUT} seconds"
+          echo "##vso[task.setvariable variable=sshReachable;isOutput=true]false"
+          exit 1
+        fi
+        
+        echo "Waiting for SSH to be open... (${ELAPSED}s elapsed)"
+        sleep 5
+      done
+  displayName: "Check SSH reachability"
+
+# https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html
+- task: Ansible@0
+  condition: and(succeeded(), eq(variables['CheckSSH.sshReachable'], 'true'))
+  inputs:
+    failOnStdErr: false # BUG: keep getting error despite ansible running succesfully
+    ansibleInterface: 'agentMachine'
+    playbookPathOnAgentMachine: '$(System.DefaultWorkingDirectory)/ansible/site.yml'
+    inventoriesAgentMachine: 'inlineContent'
+    inventoryInlineContentAgentMachine: |
+      [nginx-dev]
+      '$(TaskTerraformApply.PRIV_IP)'
+      
+      [nginx-dev:vars]
+      ansible_python_interpreter=auto 
+      ansible_user=ec2-user 
+      ansible_ssh_private_key_file=$(System.DefaultWorkingDirectory)/output/ssh_key.pem
+    sudoEnabled: true
+    args: ''
+  env:
+    ANSIBLE_HOST_KEY_CHECKING: 'False'
+  displayName: "Run Ansible"
+
+- task: AWSShellScript@1
+  inputs:
+    awsCredentials: 'lz-general-test'
+    regionName: 'ap-southeast-2'
+    scriptType: 'inline'
+    inlineScript: |
+      # Clean up
+      rm $(System.DefaultWorkingDirectory)/output/ssh_key.pem
+  displayName: "clean up key"
