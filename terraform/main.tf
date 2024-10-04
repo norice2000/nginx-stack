@@ -12,20 +12,22 @@ terraform {
 }
 
 provider "aws" {
-  region = var.region
+  #region = ap-southeast-2
+  region = "us-east-1"
 }
 
 terraform {
   backend "s3" {
     bucket = "s3-bucket-statefile"
     key    = "test/nginx-stack.tfstate"
-    region = var.region
+    #region = ap-southeast-2
+    region = "us-east-1"
   }
 }
 
 variable "region" {
   #default = "ap-southeast-2"
-  default = us-east-1
+  default = "us-east-1"
 }
 
 # variable "vpc_id" {
