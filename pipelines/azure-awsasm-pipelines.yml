@@ -150,7 +150,7 @@ steps:
 
 - task: AWSShellScript@1
   inputs:
-    awsCredentials: 'lz-general-test'
+    awsCredentials: $(aws_credentials)
     regionName: 'ap-southeast-2'
     scriptType: 'inline'
     inlineScript: |
