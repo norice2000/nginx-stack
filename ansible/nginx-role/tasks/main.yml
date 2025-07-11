@@ -12,7 +12,7 @@
 
 - name: Create HTML file
   copy:
-    content: "<html><body><h1>phoodie ^_^</h1></body></html>"
+    content: "<html><body><h1>norice2000 ^_^</h1></body></html>"
     dest: /usr/share/nginx/html/index.html
 
 - name: Configure Nginx
